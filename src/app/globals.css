@@ -1,0 +1,151 @@
+@import "tailwindcss";
+
+/*
+ * Brand theme.
+ *
+ * "Fire-roasted" palette: charcoal smoke, ember orange, and corn gold.
+ * Declared via Tailwind v4 `@theme` so `bg-brand-500`, `text-ink-900` etc.
+ * are generated utilities.
+ */
+@theme {
+  --color-brand-50: #fffaf0;
+  --color-brand-100: #fdf0d5;
+  --color-brand-200: #fadfa8;
+  --color-brand-300: #f6c86f;
+  --color-brand-400: #f2ae3d;
+  --color-brand-500: #e99320;
+  --color-brand-600: #d37612;
+  --color-brand-700: #b15812;
+  --color-brand-800: #904316;
+  --color-brand-900: #763915;
+
+  --color-ember-400: #fb923c;
+  --color-ember-500: #f97316;
+  --color-ember-600: #ea580c;
+  --color-ember-700: #c2410c;
+
+  --color-ink-50: #f8f8f7;
+  --color-ink-100: #efefed;
+  --color-ink-200: #dcdcd8;
+  --color-ink-300: #b9b9b2;
+  --color-ink-400: #8d8d85;
+  --color-ink-500: #6b6b64;
+  --color-ink-600: #52524c;
+  --color-ink-700: #41413c;
+  --color-ink-800: #2a2a27;
+  --color-ink-900: #1a1a18;
+  --color-ink-950: #0d0d0c;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-brand-50);
+    color: var(--color-ink-900);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Visible focus ring for keyboard users across all interactive elements. */
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-brand-600);
+    outline-offset: 2px;
+    border-radius: 0.25rem;
+  }
+}
+
+@layer components {
+  /* Reusable form control surface. */
+  .field {
+    @apply w-full rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm
+           text-ink-900 shadow-sm transition
+           placeholder:text-ink-400
+           focus:border-brand-500 focus:ring-2 focus:ring-brand-200 focus:outline-none
+           disabled:cursor-not-allowed disabled:bg-ink-100;
+  }
+
+  .field-error {
+    @apply border-red-400 focus:border-red-500 focus:ring-red-200;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-ink-800;
+  }
+
+  .hint {
+    @apply text-xs text-ink-500;
+  }
+
+  .error-text {
+    @apply text-xs font-medium text-red-600;
+  }
+
+  /* Buttons.
+     Tailwind v4 cannot `@apply` a custom component class, so the shared base
+     is declared once via a grouped selector and the variants add colour on top. */
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger,
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2
+           text-sm font-semibold transition
+           disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-primary {
+    @apply bg-brand-600 text-white shadow-sm hover:bg-brand-700 active:bg-brand-800;
+  }
+  .btn-secondary {
+    @apply border border-ink-200 bg-white text-ink-800 shadow-sm
+           hover:bg-ink-50 active:bg-ink-100;
+  }
+  .btn-danger {
+    @apply bg-red-600 text-white shadow-sm hover:bg-red-700 active:bg-red-800;
+  }
+  .btn-ghost {
+    @apply text-ink-700 hover:bg-ink-100;
+  }
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+
+  /* Surfaces */
+  .card,
+  .card-pad {
+    @apply rounded-xl border border-ink-200 bg-white shadow-sm;
+  }
+  .card-pad {
+    @apply p-6;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold
+           ring-1 ring-inset;
+  }
+
+  .alert-error {
+    @apply rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800;
+  }
+  .alert-success {
+    @apply rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800;
+  }
+
+  .table {
+    @apply w-full border-collapse text-left text-sm;
+  }
+  .table th {
+    @apply border-b border-ink-200 bg-ink-50 px-4 py-3 text-xs font-semibold
+           tracking-wide text-ink-600 uppercase;
+  }
+  .table td {
+    @apply border-b border-ink-100 px-4 py-3 align-middle;
+  }
+  .table tbody tr:hover {
+    @apply bg-brand-50/60;
+  }
+}

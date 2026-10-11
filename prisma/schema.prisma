@@ -1,0 +1,203 @@
+// Grilled Corn Catering — data model
+// Docs: https://pris.ly/d/prisma-schema
+//
+// NOTE: SQLite does not support Prisma enums, so constrained strings are used
+// throughout. The canonical values live in `src/lib/constants.ts` and are
+// enforced with zod at every boundary.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+/// A person who can sign in. `role` is CUSTOMER | STAFF | ADMIN.
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  phone        String?
+  role         String   @default("CUSTOMER")
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sessions        Session[]
+  reservations    Reservation[]
+  statusChanges   StatusEvent[]
+  contactMessages ContactMessage[]
+
+  @@index([role])
+}
+
+/// Server-side session record. The raw token is only ever held in the
+/// httpOnly cookie; deleting a row revokes the session immediately.
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// A catering tier (menu package) priced per head, in cents.
+model Package {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  name         String
+  tagline      String
+  description  String
+  pricePerHead Int
+  minGuests    Int      @default(10)
+  maxGuests    Int
+  active       Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  reservations Reservation[]
+
+  @@index([active, sortOrder])
+}
+
+/// An optional extra. `priceMode` is PER_ORDER | PER_HEAD.
+model Addon {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String
+  priceCents  Int
+  priceMode   String   @default("PER_ORDER")
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  reservationAddons ReservationAddon[]
+
+  @@index([active, sortOrder])
+}
+
+/// A bookable date + service window with a headcount capacity.
+model Slot {
+  id        String   @id @default(cuid())
+  date      DateTime
+  startTime String
+  endTime   String
+  capacity  Int
+  seatsUsed Int      @default(0)
+  isOpen    Boolean  @default(true)
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reservations Reservation[]
+
+  @@unique([date, startTime])
+  @@index([date])
+}
+
+/// A customer's booking.
+model Reservation {
+  id        String @id @default(cuid())
+  code      String @unique
+  userId    String
+  slotId    String
+  packageId String
+
+  partySize   Int
+  fulfillment String // DELIVERY | PICKUP
+
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  state        String?
+  postalCode   String?
+
+  contactPhone String?
+  notes        String? // customer-facing special requests
+  staffNotes   String? // internal only
+
+  status         String @default("PENDING")
+  subtotalCents  Int
+  addonsCents    Int    @default(0)
+  deliveryCents  Int    @default(0)
+  totalCents     Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slot    Slot               @relation(fields: [slotId], references: [id])
+  package Package            @relation(fields: [packageId], references: [id])
+  addons  ReservationAddon[]
+  events  StatusEvent[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([slotId])
+  @@index([createdAt])
+}
+
+/// Join row between a reservation and an add-on, snapshotting price at booking
+/// time so later menu edits never rewrite historical totals.
+model ReservationAddon {
+  id             String @id @default(cuid())
+  reservationId  String
+  addonId        String
+  quantity       Int    @default(1)
+  unitPriceCents Int
+  lineTotalCents Int
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  addon       Addon       @relation(fields: [addonId], references: [id])
+
+  @@unique([reservationId, addonId])
+  @@index([addonId])
+}
+
+/// Immutable audit trail of every status transition.
+model StatusEvent {
+  id            String   @id @default(cuid())
+  reservationId String
+  fromStatus    String?
+  toStatus      String
+  actorId       String?
+  note          String?
+  createdAt     DateTime @default(now())
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  actor       User?       @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([reservationId])
+  @@index([actorId])
+}
+
+/// Public "book us" / quote request captured from the landing page.
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  eventDate DateTime?
+  partySize Int?
+  message   String
+  status    String   @default("NEW") // NEW | READ | ARCHIVED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([createdAt])
+}
